@@ -1,56 +1,23 @@
-import { useState,useEffect } from "react";
-import { Navigate, Outlet, useLocation } from "react-router-dom";
+
+import { Navigate, Outlet } from "react-router-dom";
 import useUserStore from "./store/useUserStore";
-import { checkUSerAuth } from "./services/user.services";
-import Loader from "./utils/Loader.jsx";
 
+export function ProtectedRoute() {
+  const user = useUserStore((state) => state.user);
 
-export const ProtectedRoute = () => {
-    const [isChecking, setIsChecking] = useState(true);
-    const { isAuthenticated, setUser, clearUser } = useUserStore();
-    const location = useLocation();
+  if (!user?._id) {
+    return <Navigate to="/user-login" replace />;
+  }
 
-    useEffect(() => {
-        let active = true;
+  return <Outlet />;
+}
 
-        const verifyAuth = async () => {
-            try {
-                const result = await checkUSerAuth();
+export function PublicRoute() {
+  const user = useUserStore((state) => state.user);
 
-                if (!active) return;
+  if (user?._id) {
+    return <Navigate to="/" replace />;
+  }
 
-                if (result?.isAuthenticated) {
-                    setUser(result.user);
-                } else {
-                    clearUser();
-                }
-            } catch (error) {
-                console.error("Authentication check failed:", error);
-                if (active) clearUser();
-            } finally {
-                if (active) setIsChecking(false);
-            }
-        };
-
-        verifyAuth();
-
-        return () => {
-            active = false;
-        };
-    }, [setUser, clearUser]);
-
-    if (isChecking) return <Loader />;
-
-    if (!isAuthenticated) {
-        return <Navigate to="/user-login" state={{ from: location }} replace />;
-    }
-
-    return <Outlet />;
-};
-
-
-export const PublicRoute=()=>{
-    const isAuthenticated=useUserStore(state=>state.isAuthenticated);
-    if(isAuthenticated)return <Navigate to='/' replace/>
-    return <Outlet/>
+  return <Outlet />;
 }

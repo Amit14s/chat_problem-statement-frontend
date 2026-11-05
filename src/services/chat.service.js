@@ -1,53 +1,57 @@
- import {io} from 'socket.io-client';
- import useUserStore from '../store/useUserStore'
 
+import { io } from "socket.io-client";
+import useUserStore from "../store/useUserStore";
 
- let socket=null;
- export const initializeSocket=()=>{
-    if(socket)return socket;
-    
-    const user=useUserStore.getState().user;
-    const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+let socket = null;
 
-    socket=io(BACKEND_URL,{
-        withCredentials:true,
-        transports:["websocket","polling"],
-        reconnectionAttempts:5,
-        reconnectionDelay:1000,
-    });
-   socket.on("connect", () => {
-    console.log("socket connected", socket.id);
-
+export const initializeSocket = () => {
     const user = useUserStore.getState().user;
 
-    if (user?._id) {
-        socket.emit("user_connected", String(user._id));
-    } else {
-        console.warn("Socket connected, but no authenticated user is available");
+    if (!user?._id) return null;
+
+    if (socket?.connected) return socket;
+
+    if (socket) {
+        socket.connect();
+        return socket;
     }
-});
-    socket.on("connect_error",(error)=>{
-        console.log("socket connection error",error);
-    })
-     socket.on("disconnect",(reason)=>{
-        console.log("socket disconnected",reason);
-    })
 
+    socket = io(import.meta.env.VITE_BACKEND_URL, {
+        withCredentials: true,
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000
+    });
 
+    socket.on("connect", () => {
+        console.log("Socket connected:", socket.id);
+    });
 
-    return socket
- };
+    socket.on("connected", (data) => {
+        console.log("Authenticated socket:", data);
+    });
 
- export const getSocket=()=>{
-    if(!socket){
-        return initializeSocket();
-    }
+    socket.on("connect_error", (error) => {
+        console.error("Socket connection error:", error.message);
+    });
+
+    socket.on("disconnect", (reason) => {
+        console.log("Socket disconnected:", reason);
+    });
+
     return socket;
- }
+};
 
- export const disconnectSocket =()=>{
-    if(socket){
+export const getSocket = () => {
+    if (!socket) return initializeSocket();
+    return socket;
+};
+
+export const disconnectSocket = () => {
+    if (socket) {
+        socket.removeAllListeners();
         socket.disconnect();
-        socket=null;
+        socket = null;
     }
- }
+};
