@@ -16,7 +16,9 @@ import { disconnectSocket, initializeSocket } from "./services/chat.service.js";
 import { useChatStore } from "./store/chatStore.js";
 
 function App() {
+  // IMPORTANT: select the actual user, not the entire Zustand store
   const user = useUserStore((state) => state.user);
+
   const setCurrentUser = useChatStore((state) => state.setCurrentUser);
   const initsocketListners = useChatStore((state) => state.initsocketListners);
   const cleanup = useChatStore((state) => state.cleanup);
@@ -37,6 +39,7 @@ function App() {
   return (
     <>
       <ToastContainer position="top-right" autoClose={3000} />
+
       <Router>
         <Routes>
           <Route element={<PublicRoute />}>
